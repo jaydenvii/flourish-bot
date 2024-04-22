@@ -9,7 +9,7 @@ from datetime import datetime
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=",,", intents=discord.Intents.all())
 
 @bot.event
 async def on_ready():
@@ -20,12 +20,12 @@ async def on_ready():
 async def ping(ctx):
     await ctx.send("pong")
 
-#counts messages sent in a server by person
-async def countMessages(ctx):
+#counts messages sent in a channel by person
+async def countChannelMessages(channel):
     counts = {}
 
     # counts all messages
-    async for message in ctx.channel.history(limit=None):
+    async for message in channel.history(limit=None):
         author = message.author.display_name
         month = message.created_at.strftime("%B %Y")
         
@@ -55,11 +55,28 @@ async def countMessages(ctx):
 
     return counts
 
-#sends the dict from countMessages() as a csv
-@bot.command()
-async def messagesCSV(ctx):
-    counts = await countMessages(ctx)
+#counts messages sent in all channels by person
+@bot.command() #remove command
+async def countAllMessages(ctx):
+    allCounts = {}
 
+    # repeatedly calls countChannelMessages for every channel
+    for channel in ctx.guild.channels:
+        channelCounts = await countChannelMessages(discord.utils.get(ctx.guild.channels, id=channel.id))
+        for author, countsPerUser in channelCounts.items():
+            if author not in allCounts:
+                    allCounts[author] = {}
+
+            for month, countsPerMonth in countsPerUser.items():
+                if month not in allCounts[author]:
+                    allCounts[author][month] = countsPerMonth
+                else:
+                    allCounts[author][month] += countsPerMonth
+
+    return allCounts
+
+#sends the dict from countMessages() as a csv
+async def sendCSV(ctx, counts):
     csvData = io.StringIO()
     csvWriter = csv.writer(csvData)
 
@@ -74,6 +91,7 @@ async def messagesCSV(ctx):
     header = ["User"] + sortedMonths
     csvWriter.writerow(header)
 
+    # add each row
     for user, count in counts.items():
         row = [user] + [count.get(month, 0) for month in header[1:]]
         csvWriter.writerow(row)
@@ -81,5 +99,17 @@ async def messagesCSV(ctx):
     csvContent = csvData.getvalue()
 
     await ctx.send(file=discord.File(io.BytesIO(csvContent.encode()), filename="counts.csv"))
+
+@bot.command()
+async def currentChannel(ctx):
+    counts = await countChannelMessages(ctx.channel)
+
+    await sendCSV(ctx, counts)
+
+@bot.command()
+async def allChannels(ctx):
+    allCounts = await countAllMessages(ctx.channel)
+
+    await sendCSV(ctx, allCounts)
 
 bot.run(TOKEN)
