@@ -43,6 +43,16 @@ async def countMessages(ctx):
         countsPerUser.clear()
         countsPerUser.update(countsPerUserSorted)
 
+    # create sum array
+    for countsPerUser in counts.values():
+        summedCounts = list(countsPerUser.values())
+        
+        for i in range(1, len(summedCounts)):
+            summedCounts[i] += summedCounts[i-1]
+
+        for countsPerMonth in countsPerUser.keys():
+            countsPerUser[countsPerMonth] = summedCounts.pop(0)
+
     return counts
 
 #sends the dict from countMessages() as a csv
