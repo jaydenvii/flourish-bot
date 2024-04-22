@@ -15,12 +15,11 @@ bot = commands.Bot(command_prefix=",,", intents=discord.Intents.all())
 async def on_ready():
     print("online")
 
-#testing command
 @bot.command()
 async def ping(ctx):
     await ctx.send("pong")
 
-#counts messages sent in a channel by person
+# counts messages sent in a channel by person
 async def countChannelMessages(channel):
     counts = {}
 
@@ -55,7 +54,7 @@ async def countChannelMessages(channel):
 
     return counts
 
-#counts messages sent in all channels by person
+# counts messages sent in all channels by person
 @bot.command() #remove command
 async def countAllMessages(ctx):
     allCounts = {}
@@ -75,7 +74,7 @@ async def countAllMessages(ctx):
 
     return allCounts
 
-#sends the dict from countMessages() as a csv
+# creates and sends the CSV for current or all channels
 async def sendCSV(ctx, counts):
     csvData = io.StringIO()
     csvWriter = csv.writer(csvData)
@@ -100,12 +99,14 @@ async def sendCSV(ctx, counts):
 
     await ctx.send(file=discord.File(io.BytesIO(csvContent.encode()), filename="counts.csv"))
 
+# sends CSV for current channel
 @bot.command()
 async def currentChannel(ctx):
     counts = await countChannelMessages(ctx.channel)
 
     await sendCSV(ctx, counts)
 
+# sends CSV for all channels
 @bot.command()
 async def allChannels(ctx):
     allCounts = await countAllMessages(ctx.channel)
