@@ -74,7 +74,7 @@ async def countAllMessages(ctx):
 
     return allCounts
 
-# creates and sends the CSV for current or all channels
+# creates and sends the CSV for the current or all channels
 async def sendCSV(ctx, counts):
     csvData = io.StringIO()
     csvWriter = csv.writer(csvData)
@@ -99,12 +99,28 @@ async def sendCSV(ctx, counts):
 
     await ctx.send(file=discord.File(io.BytesIO(csvContent.encode()), filename="counts.csv"))
 
-# sends CSV for current channel
+# sends CSV for the current channel
 @bot.command()
-async def currentChannel(ctx):
-    counts = await countChannelMessages(ctx.channel)
+async def currChannel(ctx):
+    currCounts = await countChannelMessages(ctx.channel)
 
-    await sendCSV(ctx, counts)
+    await sendCSV(ctx, currCounts)
+
+# sends CSV for a specific channel via the channel name or id
+@bot.command()
+async def specChannel(ctx, channelArg):
+    channel = discord.utils.get(ctx.guild.channels, name=channelArg)
+    
+    # if the channel is not found via the name, check via the id
+    if channel is None:
+        channel = discord.utils.get(ctx.guild.channels, id=int(channelArg))
+    
+    if channel is None:
+        await ctx.send("invalid arg")
+
+    specCounts = await countChannelMessages(channel)
+
+    await sendCSV(ctx, specCounts)
 
 # sends CSV for all channels
 @bot.command()
